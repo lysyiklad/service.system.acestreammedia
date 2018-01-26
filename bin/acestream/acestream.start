@@ -1,0 +1,113 @@
+#!/bin/sh
+
+. /etc/profile
+oe_setup_addon service.system.acestreammedia
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+ACEDIR=$(readlink -f $(dirname $0))
+ACECHROOT="androidfs"
+ACESTREAM="$ACEDIR/$ACECHROOT/storage/.ACEStream"
+MOUNT_STATE="$ACEDIR/disk.mount"
+ETC_DIR="$ACEDIR/$ACECHROOT/system/etc"
+DIR_MOUNT="$ACEDIR/$ACECHROOT/mount"
+LOG="$ACEDIR/aceaddon.log"
+
+log(){   
+   IS_DEBUG=$is_debug
+   [ -z $IS_DEBUG ] && IS_DEBUG="false"
+   [ $IS_DEBUG == "true" ] && echo "$(date +"%y-%m-%d %T")|"service.system.acestreammedia"|$(basename "$0")|$@" >> $LOG
+}
+
+mkdir -p $ACEDIR/$ACECHROOT/system
+mkdir -p $ACEDIR/$ACECHROOT/dev
+mkdir -p $ACEDIR/$ACECHROOT/proc
+mkdir -p $ACEDIR/$ACECHROOT/sys
+mkdir -p $ACEDIR/$ACECHROOT/storage
+mkdir -p $ACEDIR/$ACECHROOT/storage/.ACEStream
+
+mount -o bind /dev $ACEDIR/$ACECHROOT/dev &>/dev/null
+mount -t proc proc $ACEDIR/$ACECHROOT/proc &>/dev/null
+mount -t sysfs sysfs $ACEDIR/$ACECHROOT/sys &>/dev/null
+
+DHT_TRANSMISSIONBT_COM=$dht_transmissionbt_com
+ROUTER_BITTORRENT_COM=$router_bittorrent_com
+
+[ -z "$DHT_TRANSMISSIONBT_COM" ] && DHT_TRANSMISSIONBT_COM="212.129.33.59"
+[ -z "$ROUTER_BITTORRENT_COM" ] && ROUTER_BITTORRENT_COM="67.215.246.10"
+
+log "ROUTER_BITTORRENT_COM=$ROUTER_BITTORRENT_COM"
+log "DHT_TRANSMISSIONBT_COM=$DHT_TRANSMISSIONBT_COM"
+
+mkdir -p $ETC_DIR
+if [ ! -f $ETC_DIR/hosts ]; then
+  cp -f /run/connman/hosts $ETC_DIR/hosts 
+  echo "$DHT_TRANSMISSIONBT_COM dht.transmissionbt.com" >> $ETC_DIR/hosts 
+  echo "$ROUTER_BITTORRENT_COM router.bittorrent.com" >> $ETC_DIR/hosts
+fi
+[ ! -f $ETC_DIR/hostname ] && cp -f /proc/sys/kernel/hostname $ETC_DIR/hostname
+[ ! -f $ETC_DIR/resolv.conf ] && cp -f /run/connman/resolv.conf $ETC_DIR/resolv.conf
+
+VOD_CACHE_TYPE=$vod_cache_type
+LIVE_CACHE_TYPE=$live_cache_type
+DISK_CACHE=$disk_cache
+CACHE_TYPE="memory"
+
+[ -z "$DISK_CACHE" ] && DISK_CACHE="default"
+[ -z "$vod_cache_type" ] &&	VOD_CACHE_TYPE="memory"
+[ -z "$live_cache_type" ] && LIVE_CACHE_TYPE="memory"
+
+log "DISK_CACHE=$DISK_CACHE"
+log "VOD_CACHE_TYPE=$VOD_CACHE_TYPE"
+log "LIVE_CACHE_TYPE=$LIVE_CACHE_TYPE"
+
+MOUNT_DISK="/storage"
+NAME_DISK=$(echo $DISK_CACHE | awk '{ print $1 }')
+MOUNT_DISK=$(echo $DISK_CACHE | sed -e 's/.*(\(.*\)).*/\1/')
+
+log "MOUNT_DISK=$MOUNT_DISK"
+log "NAME_DISK=$NAME_DISK"
+
+if [ $VOD_CACHE_TYPE = "memory" -a $LIVE_CACHE_TYPE = "memory" ]; then
+    CACHE_TYPE="memory"
+else
+    CACHE_TYPE="disk"
+fi
+
+log "CACHE_TYPE=$CACHE_TYPE"
+log "IF UMOUNT: [$CACHE_TYPE = memory -o $NAME_DISK=default]"
+if [ $CACHE_TYPE = "memory" -o $NAME_DISK="default" ]; then		
+	if [ -f "$MOUNT_STATE" ]; then
+		log "IF UMOUNT(there is a file disk.mount): yes"
+		rm -f $MOUNT_STATE
+		umount $ACEDIR/$ACECHROOT/storage &>/dev/null
+	fi
+fi
+
+log "IF MOUNT EXTERNAL DISK: [ $CACHE_TYPE = disk -a $NAME_DISK != default ]"
+if [ $CACHE_TYPE = "disk" -a $NAME_DISK != "default" ]; then
+	if [ "$MOUNT_DISK" != "/storage" ]; then
+	  MOUNT_TYPE=$(/bin/mount | grep "$MOUNT_DISK" | sed -e "s|^.* type ||" | awk '{ print $1 }')
+	  if [ "$MOUNT_TYPE" == "vfat" -o "$MOUNT_TYPE" == "ext4" -o "$MOUNT_TYPE" == "ext3" -o "$MOUNT_TYPE" == "ext2" ]; then
+	    log "MOUNT DISK: $MOUNT_DISK - MOUNT_TYPE=$MOUNT_TYPE"
+		rm -fR $ACESTREAM &>/dev/null
+		/sbin/chroot $ACEDIR/$ACECHROOT /system/bin/toolbox mount -t $MOUNT_TYPE $MOUNT_DISK /storage &>/dev/null
+		echo "$MOUNT_DISK" > $MOUNT_STATE		
+	  fi
+	fi	
+fi
+
+mkdir -p $ACESTREAM
+
+[ -f $ACEDIR/playerconf.pickle ] && cp -f $ACEDIR/playerconf.pickle $ACESTREAM
+
+chroot $ACEDIR/$ACECHROOT /system/bin/sh -c "cd /acestream.engine ; /system/bin/acestream.sh" > $ACEDIR/acestream.log 2>&1 - << EOF
+
+from acestreamengine import Core
+
+params = "$@".split(' ')
+if params == ['']:
+    params = []
+
+Core.run(params)
+EOF
