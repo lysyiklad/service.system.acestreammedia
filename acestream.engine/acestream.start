@@ -1,0 +1,81 @@
+#!/bin/sh
+
+. /etc/profile
+oe_setup_addon service.system.acestreammedia
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+ACEDIR=$(readlink -f $(dirname $0))
+ACECHROOT="androidfs"
+ACESTREAM_CACHE="$ACEDIR/$ACECHROOT/storage/.ACEStream"
+ACESTREAM_ENGINE="$ACEDIR/$ACECHROOT/acestream.engine"
+MOUNT_STATE="$ACEDIR/disk.mount"
+LOG="$ACEDIR/aceaddon.log"
+
+log(){   
+   IS_DEBUG=$is_debug
+   [ -z $IS_DEBUG ] && IS_DEBUG="false"
+   [ $IS_DEBUG == "true" ] && echo "$(date +"%y-%m-%d %T")|"service.system.acestreammedia"|$(basename "$0")|$@" >> $LOG
+}
+
+log "==================== START ACESTREAM ENGINE ======================="   
+
+chmod 755 $ACEDIR/acestream.start
+chmod 755 $ACEDIR/acestream.stop
+chmod 755 $ACEDIR/mount_disk.sh
+chmod 755 $ACEDIR/$ACECHROOT/system/bin/* $ACESTREAM_ENGINE/python/bin/python
+
+mkdir -p $ACEDIR/$ACECHROOT/system
+mkdir -p $ACEDIR/$ACECHROOT/dev
+mkdir -p $ACEDIR/$ACECHROOT/proc
+mkdir -p $ACEDIR/$ACECHROOT/sys
+mkdir -p $ACEDIR/$ACECHROOT/storage
+
+mount -o bind /dev $ACEDIR/$ACECHROOT/dev &>/dev/null
+mount -t proc proc $ACEDIR/$ACECHROOT/proc &>/dev/null
+mount -t sysfs sysfs $ACEDIR/$ACECHROOT/sys &>/dev/null
+
+[ ! -f $ACEDIR/$ACECHROOT/system/etc/resolv.conf ] && cp -L /etc/resolv.conf $ACEDIR/$ACECHROOT/system/etc/resolv.conf
+
+if [ ! -f $ACEDIR/$ACECHROOT/system/etc/hosts ]; then
+  cp -L /etc/hosts $ACEDIR/$ACECHROOT/system/etc/hosts
+  echo "67.215.246.10 router.bittorrent.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
+  echo "212.129.33.59 dht.transmissionbt.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
+  echo "82.221.103.244 router.utorrent.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
+fi
+
+DISK_CACHE=$disk_cache
+
+[ -z "$DISK_CACHE" ] && DISK_CACHE="default (/storage)"
+
+log "DISK_CACHE=$DISK_CACHE"
+
+if [ -f "$MOUNT_STATE" ]; then
+    log "IF UMOUNT(there is a file disk.mount): yes"
+    rm -f $MOUNT_STATE
+    umount $ACEDIR/$ACECHROOT/storage &>/dev/null
+fi
+
+log "$DISK_CACHE != default (/storage)"
+
+if [ "default (/storage)" != "$DISK_CACHE" ]; then
+    NAME_DISK=$(echo $DISK_CACHE | awk '{ print $1 }')
+    MOUNT_DISK=$(echo $DISK_CACHE | sed -e 's/.*(\(.*\)).*/\1/')
+    MOUNT_TYPE=$(/bin/mount | grep "$MOUNT_DISK" | sed -e "s|^.* type ||" | awk '{ print $1 }')
+    log "MOUNT_DISK=$MOUNT_DISK"
+    log "NAME_DISK=$NAME_DISK"
+    log "MOUNT_TYPE=$MOUNT_TYPE"
+	if [ "$MOUNT_TYPE" == "vfat" -o "$MOUNT_TYPE" == "ext4" -o "$MOUNT_TYPE" == "ext3" -o "$MOUNT_TYPE" == "ext2" ]; then
+	    log "MOUNT DISK: $MOUNT_DISK - MOUNT_TYPE=$MOUNT_TYPE"
+		/sbin/chroot $ACEDIR/$ACECHROOT /system/bin/busybox mount -t $MOUNT_TYPE $MOUNT_DISK /storage &>/dev/null
+		echo "$MOUNT_DISK" > $MOUNT_STATE
+	elif [ "$MOUNT_TYPE" == "cifs" -o "$MOUNT_TYPE" == "nfs" ]; then
+	    log "MOUNT DISK: $MOUNT_DISK - MOUNT_TYPE=$MOUNT_TYPE"
+		mount -o bind $MOUNT_DISK $ACEDIR/$ACECHROOT/storage &>/dev/null
+		echo "$MOUNT_DISK" > $MOUNT_STATE
+	else
+		log "Error mount disk! No mount typer!" 
+	fi
+fi
+
+chroot $ACEDIR/$ACECHROOT /system/bin/busybox sh -c "/system/bin/acestream.sh" > $ACEDIR/acestream.log 2>&1

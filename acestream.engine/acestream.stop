@@ -1,0 +1,18 @@
+#!/bin/sh
+
+ACEDIR=$(readlink -f $(dirname $0))
+ACECHROOT="androidfs"
+MOUNT_STATE="$ACEDIR/disk.mount"
+
+pkill -9 -f "/acestream.engine/python/bin/python" &>/dev/null
+pkill -9 -f "/system/bin/acestream.sh" &>/dev/null 
+
+
+umount $ACEDIR/$ACECHROOT/proc &>/dev/null
+umount $ACEDIR/$ACECHROOT/sys &>/dev/null
+umount $ACEDIR/$ACECHROOT/dev &>/dev/null
+
+if [ -f "$MOUNT_STATE" ]; then
+  rm -f $MOUNT_STATE
+  umount $ACEDIR/$ACECHROOT/storage &>/dev/null
+fi
