@@ -26,6 +26,7 @@ chmod 755 $ACEDIR/mount_disk.sh
 chmod 755 $ACEDIR/$ACECHROOT/system/bin/* $ACESTREAM_ENGINE/python/bin/python
 
 mkdir -p $ACEDIR/$ACECHROOT/system
+mkdir -p $ACEDIR/$ACECHROOT/system/etc
 mkdir -p $ACEDIR/$ACECHROOT/dev
 mkdir -p $ACEDIR/$ACECHROOT/proc
 mkdir -p $ACEDIR/$ACECHROOT/sys
