@@ -2,9 +2,9 @@
 	<category label="32101">
 		<setting id="live_cache_type" label="32110" type="labelenum" values="memory|disk" />
 		<setting id="vod_cache_type" label="32111" type="labelenum" values="memory|disk" />
-		<setting default="150" id="memory_cache_limit" label="32112" type="number" visible="eq(-1,0)|eq(-2,0)" />
-		<setting default="0" id="total_max_download_rate" label="32115" type="number" visible="eq(-2,1)|eq(-3,1)" />
-		<setting default="0" enable="false" id="total_max_upload_rate" label="32116" type="number" visible="eq(-3,1)|eq(-4,1)" />
+		<setting default="150" id="memory_cache_limit" label="32112" type="number" />
+		<setting default="0" id="total_max_download_rate" label="32115" type="number" />
+		<setting default="0" id="total_max_upload_rate" label="32116" type="number" />
 		<setting default="original" id="playlist_output_format_live" label="32124" type="labelenum" values="auto|original|hls|http" />
 		<setting default="http" id="playlist_output_format_vod" label="32125" type="labelenum" values="auto|original|hls|http" />
 		<setting default="5" id="disk_cache_limit" label="32114" type="number" />
@@ -16,7 +16,7 @@
 	<category label="32102">
 		<setting default="ACESTREAM_LOGIN" id="login" label="32129" type="text" />
 		<setting default="ACESTREAM_PASSW" id="password" label="32130" type="text" />		
-		<setting default="ReplaceMe" id="access_token" label="32121" type="text" />
+		<setting default="WEBUITOKEN" id="access_token" label="32121" type="text" />
 		<setting default="true" id="allow_intranet_access" label="32127" type="bool" />
 		<setting default="false" id="allow_remote_access" label="32128" type="bool" />		
 		<setting default="false" id="transcode_audio" label="32131" type="bool" />
