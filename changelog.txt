@@ -1,3 +1,6 @@
+v.1.0.7
+- ACE Stream Engine v.3.1.33;
+
 v.1.0.6
 - ACE Stream Engine v.3.1.31.3;
 

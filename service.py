@@ -84,6 +84,7 @@ class Monitor(xbmc.Monitor):
    
    def createAcestreamConf(self):
       arg = \
+      '--client-console' + '\n' + \
       '--login' + '\n' + self.param('login') + '\n' + \
       '--password' + '\n' + self.param('password') + '\n' + \
       '--bind-all' + '\n' + \
