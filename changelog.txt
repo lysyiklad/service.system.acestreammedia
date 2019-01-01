@@ -1,3 +1,7 @@
+v.1.0.8
+- ACE Stream Engine v.3.1.33;
+- using python 2.7.2;
+
 v.1.0.7
 - ACE Stream Engine v.3.1.33;
 
