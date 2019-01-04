@@ -1,3 +1,6 @@
+v.1.0.81
+- bug fix Raspberry Pi
+
 v.1.0.8
 - ACE Stream Engine v.3.1.33;
 - using python 2.7.2;
