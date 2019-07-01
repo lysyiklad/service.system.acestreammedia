@@ -40,9 +40,9 @@ mount -t sysfs sysfs $ACEDIR/$ACECHROOT/sys &>/dev/null
 
 if [ ! -f $ACEDIR/$ACECHROOT/system/etc/hosts ]; then
   cp -L /etc/hosts $ACEDIR/$ACECHROOT/system/etc/hosts
-  echo "67.215.246.10 router.bittorrent.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
-  echo "212.129.33.59 dht.transmissionbt.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
-  echo "82.221.103.244 router.utorrent.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
+  # echo "67.215.246.10 router.bittorrent.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
+  # echo "212.129.33.59 dht.transmissionbt.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
+  # echo "82.221.103.244 router.utorrent.com" >> $ACEDIR/$ACECHROOT/system/etc/hosts
 fi
 
 DISK_CACHE=$disk_cache

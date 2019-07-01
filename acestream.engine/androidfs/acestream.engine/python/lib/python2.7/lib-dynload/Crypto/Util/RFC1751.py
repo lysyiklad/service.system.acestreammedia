@@ -24,10 +24,10 @@
 # SOFTWARE.
 # ===================================================================
 
-__revision__ = "$Id$"
-
+from __future__ import print_function
 
 import binascii
+
 from Crypto.Util.py3compat import *
 
 binary={0:'0000', 1:'0001', 2:'0010', 3:'0011', 4:'0100', 5:'0101',
@@ -43,14 +43,28 @@ def _key2bin(s):
 def _extract(key, start, length):
     """Extract a bitstring(2.x)/bytestring(2.x) from a string of binary digits, and return its
     numeric value."""
-    k=key[start:start+length]
-    return reduce(lambda x,y: x*2+ord(y)-48, k, 0)
+    
+    result = 0
+    for y in key[start:start+length]:
+        result = result * 2 + ord(y) - 48
+    return result
 
 def key_to_english (key):
-    """key_to_english(key:string(2.x)/bytes(3.x)) : string
-    Transform an arbitrary key into a string containing English words.
-    The key length must be a multiple of 8.
+    """Transform an arbitrary key into a string containing English words.
+
+    Example::
+
+        >>> from Crypto.Util.RFC1751 import key_to_english
+        >>> key_to_english(b'66666666')
+        'RAM LOIS GOAD CREW CARE HIT'
+
+    Args:
+      key (byte string):
+        The key to convert. Its length must be a multiple of 8.
+    Return:
+      A string of English words.
     """
+
     english=''
     for index in range(0, len(key), 8): # Loop over 8-byte subkeys
         subkey=key[index:index+8]
@@ -62,16 +76,25 @@ def key_to_english (key):
         for i in range(0, 64, 11):
             english=english+wordlist[_extract(skbin, i, 11)]+' '
 
-    return english[:-1]                 # Remove the trailing space
+    return english.strip()
 
 def english_to_key (s):
-    """english_to_key(string):string(2.x)/bytes(2.x)
-    Transform a string into a corresponding key.
-    The string must contain words separated by whitespace; the number
-    of words must be a multiple of 6.
+    """Transform a string into a corresponding key.
+
+    Example::
+
+        >>> from Crypto.Util.RFC1751 import english_to_key
+        >>> english_to_key('RAM LOIS GOAD CREW CARE HIT')
+        b'66666666'
+
+    Args:
+      s (string): the string with the words separated by whitespace;
+                  the number of words must be a multiple of 6.
+    Return:
+      A byte string.
     """
 
-    L=s.upper().split() ; key=b('')
+    L=s.upper().split() ; key=b''
     for index in range(0, len(L), 6):
         sublist=L[index:index+6] ; char=9*[0] ; bits=0
         for i in sublist:
@@ -88,14 +111,17 @@ def english_to_key (s):
                 char[(bits>>3)+1] = char[(bits>>3)+1] | cr
             else: char[bits>>3] = char[bits>>3] | cr
             bits=bits+11
-        subkey=reduce(lambda x,y:x+bchr(y), char, b(''))
+
+        subkey = b''
+        for y in char:
+            subkey = subkey + bchr(y)
 
         # Check the parity of the resulting key
         skbin=_key2bin(subkey)
         p=0
         for i in range(0, 64, 2): p=p+_extract(skbin, i, 2)
         if (p&3) != _extract(skbin, 64, 2):
-            raise ValueError, "Parity error in resulting key"
+            raise ValueError("Parity error in resulting key")
         key=key+subkey[0:8]
     return key
 
@@ -351,14 +377,15 @@ if __name__=='__main__':
              'TROD MUTE TAIL WARM CHAR KONG HAAG CITY BORE O TEAL AWL')
            ]
 
-    for key, words in data:
-        print 'Trying key', key
-        key=binascii.a2b_hex(key)
-        w2=key_to_english(key)
+    for key_hex, words in data:
+        print('Trying key', key_hex)
+        key_bin=binascii.a2b_hex(key_hex)
+        w2=key_to_english(key_bin)
         if w2!=words:
-            print 'key_to_english fails on key', repr(key), ', producing', str(w2)
+            print('key_to_english fails on key', key_hex, ', producing', w2)
         k2=english_to_key(words)
-        if k2!=key:
-            print 'english_to_key fails on key', repr(key), ', producing', repr(k2)
+        if k2!=key_bin:
+            print('english_to_key fails on key', key_hex, ', producing',
+                  repr(k2))
 
 

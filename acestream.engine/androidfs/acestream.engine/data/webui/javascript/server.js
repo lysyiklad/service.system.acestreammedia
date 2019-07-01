@@ -1090,7 +1090,7 @@ function setEngineLoginAndPassword(data)
     }
     
     $.ajax({
-        url: 'user/login',
+        url: 'settings/set',
         type: 'GET',
         dataType: 'json',
         cache: false,

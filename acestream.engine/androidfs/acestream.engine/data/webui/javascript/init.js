@@ -914,7 +914,7 @@ $("#save_acestream_log_pass").click(function() {
             
         if(confirm("Подтвердите корректность введенных данных\nЛогин: " + value_login + "\nПароль: " +  value_password)) {
 
-        setEngineLoginAndPassword({'email': value_login, 'password': value_password });
+        setEngineLoginAndPassword({'login': value_login, 'password': value_password });
         } else {
             fild_login.val(prev_value_login);
             fild_pass.val("");
